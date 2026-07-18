@@ -1,0 +1,19 @@
+[api]
+# Replace with your provider key or set AUDIOTRIAGE_LLM_API_KEY.
+llm_api_key = "REPLACE_ME"
+
+[paths]
+log_binary_path = "/usr/bin/log"
+system_profiler_path = "/usr/sbin/system_profiler"
+powermetrics_path = "/usr/bin/powermetrics"
+
+[logs]
+coreaudiod_log_predicate = "process == \"coreaudiod\""
+usb_log_predicate = "subsystem == \"com.apple.iokit.usb\""
+
+[thresholds]
+correlation_window_seconds = 10
+confidence_threshold = 0.70
+
+[storage]
+database_path = "./var/audiotriage.sqlite3"
