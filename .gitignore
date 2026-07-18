@@ -216,3 +216,24 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# OpenSpec temporary tracking
+.openspec/state.json
+.openspec/workspace/
+openspec/temp/
+openspec/cache/
+
+# AI-generated context & logs
+.ai-context/
+.spec-history/
+spec-gen.log
+.github/
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Custom OpenSpec overrides go below this line
+
