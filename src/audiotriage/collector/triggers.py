@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import re
 from collections import deque
 from collections.abc import Iterable
 from datetime import datetime
-import re
 
 from .models import IncidentCandidate
 

@@ -227,7 +227,7 @@ openspec/cache/
 .ai-context/
 .spec-history/
 spec-gen.log
-.github/
+.claude/
 
 # System & IDE files
 .DS_Store

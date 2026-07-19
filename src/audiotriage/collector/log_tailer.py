@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
 import json
 import subprocess
+from collections.abc import Iterator
 
 
 class UnifiedLogTailer:

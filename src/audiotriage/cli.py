@@ -25,15 +25,29 @@ def _build_parser() -> argparse.ArgumentParser:
 
     subcommands.add_parser("run", help="Start collector service")
 
-    report_parser = subcommands.add_parser("report", help="Process new incidents and write reports")
+    report_parser = subcommands.add_parser(
+        "report",
+        help="Process new incidents and write reports",
+    )
     report_parser.add_argument("--since", default=None, help="ISO timestamp lower bound")
-    report_parser.add_argument("--output-dir", default="var/reports", help="Directory for report files")
+    report_parser.add_argument(
+        "--output-dir",
+        default="var/reports",
+        help="Directory for report files",
+    )
 
-    summary_parser = subcommands.add_parser("summary", help="Write a summary for the last week or custom period")
+    summary_parser = subcommands.add_parser(
+        "summary",
+        help="Write a summary for the last week or custom period",
+    )
     summary_parser.add_argument("--week", action="store_true", help="Summarize last 7 days")
     summary_parser.add_argument("--since", default=None, help="ISO timestamp lower bound")
     summary_parser.add_argument("--until", default=None, help="ISO timestamp upper bound")
-    summary_parser.add_argument("--output-dir", default="var/reports", help="Directory for summary files")
+    summary_parser.add_argument(
+        "--output-dir",
+        default="var/reports",
+        help="Directory for summary files",
+    )
 
     return parser
 
@@ -71,7 +85,11 @@ def main() -> None:
                 since = datetime.now() - timedelta(days=7)
                 until = datetime.now()
             else:
-                since = datetime.fromisoformat(args.since) if args.since else datetime.now() - timedelta(days=7)
+                since = (
+                    datetime.fromisoformat(args.since)
+                    if args.since
+                    else datetime.now() - timedelta(days=7)
+                )
                 until = datetime.fromisoformat(args.until) if args.until else datetime.now()
             md_path, json_path = controller.build_summary(
                 output_dir=args.output_dir,

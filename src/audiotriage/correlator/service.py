@@ -52,7 +52,11 @@ class IncidentCorrelator:
         )
         likely_cause = str(payload.get("likely_cause", "no correlated system event found"))
         evidence_payload = payload.get("evidence", [])
-        evidence = [str(item) for item in evidence_payload] if isinstance(evidence_payload, list) else []
+        evidence = (
+            [str(item) for item in evidence_payload]
+            if isinstance(evidence_payload, list)
+            else []
+        )
         no_correlated_event = bool(payload.get("no_correlated_event", False))
         return CorrelationResult(
             likely_cause=likely_cause,

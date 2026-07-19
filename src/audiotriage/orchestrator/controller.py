@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 from sqlite3 import Connection
 
@@ -32,7 +32,12 @@ class PipelineController:
         self._report_writer = report_writer
         self._correlation_window_seconds = correlation_window_seconds
 
-    def process_unreported(self, output_dir: str, limit: int = 50, since: datetime | None = None) -> int:
+    def process_unreported(
+        self,
+        output_dir: str,
+        limit: int = 50,
+        since: datetime | None = None,
+    ) -> int:
         if since is None:
             rows = self._connection.execute(
                 """
@@ -118,7 +123,7 @@ class PipelineController:
             (since.isoformat(), until.isoformat()),
         ).fetchall()
 
-        incidents = [
+        incidents: list[dict[str, object]] = [
             {"class": str(row[0]), "correlated_cause": str(row[1] or "unknown")}
             for row in rows
         ]

@@ -18,7 +18,11 @@ class ClassificationResult:
     confidence: float
     reasoning: str
 
-    def normalized(self) -> "ClassificationResult":
+    def normalized(self) -> ClassificationResult:
         category = self.category if self.category in INCIDENT_CLASSES else "unknown"
         confidence = min(max(self.confidence, 0.0), 1.0)
-        return ClassificationResult(category=category, confidence=confidence, reasoning=self.reasoning)
+        return ClassificationResult(
+            category=category,
+            confidence=confidence,
+            reasoning=self.reasoning,
+        )
