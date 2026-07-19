@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import re
 import subprocess
+from datetime import UTC, datetime
 
 import psutil
 
@@ -22,7 +22,7 @@ class SystemSampler:
         cpu_temperature_c = self._try_powermetrics_temperature()
 
         return SystemSample(
-            sampled_at=datetime.now(tz=timezone.utc),
+            sampled_at=datetime.now(tz=UTC),
             cpu_percent=cpu_percent,
             thermal_pressure=None,
             cpu_temperature_c=cpu_temperature_c,

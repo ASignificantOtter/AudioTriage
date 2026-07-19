@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 from audiotriage.reporter.service import ReportWriter
 
@@ -31,4 +32,5 @@ def test_build_summary_rolls_up_categories() -> None:
     )
 
     assert report.payload["total"] == 3
-    assert report.payload["categories"]["buffer_underrun"] == 2
+    categories = cast(dict[str, int], report.payload["categories"])
+    assert categories["buffer_underrun"] == 2

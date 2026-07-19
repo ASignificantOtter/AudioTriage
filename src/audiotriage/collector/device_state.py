@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
 import subprocess
+from datetime import UTC, datetime
 
 from .models import DeviceState
 
@@ -53,7 +53,7 @@ class CoreAudioDevicePoller:
                         buffer_size_frames = _extract_buffer_size(item)
 
         return DeviceState(
-            polled_at=datetime.now(tz=timezone.utc),
+            polled_at=datetime.now(tz=UTC),
             active_devices=active_devices,
             sample_rate_hz=sample_rate_hz,
             buffer_size_frames=buffer_size_frames,

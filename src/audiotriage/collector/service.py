@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import json
-from sqlite3 import Connection
 import threading
+from datetime import UTC, datetime
+from sqlite3 import Connection
 from typing import Any
 
 from .log_tailer import coreaudiod_tailer, usb_tailer
@@ -66,8 +66,8 @@ def _extract_timestamp(record: dict[str, Any]) -> datetime:
         try:
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
-            pass
-    return datetime.now(tz=timezone.utc)
+            return datetime.now(tz=UTC)
+    return datetime.now(tz=UTC)
 
 
 def _extract_message(record: dict[str, Any]) -> str | None:

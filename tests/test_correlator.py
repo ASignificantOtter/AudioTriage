@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from audiotriage.correlator.service import IncidentCorrelator
 from audiotriage.correlator.types import SystemEvent
@@ -7,7 +7,7 @@ from audiotriage.correlator.types import SystemEvent
 def test_correlator_returns_no_event_message() -> None:
     correlator = IncidentCorrelator()
     result = correlator.correlate(
-        incident_timestamp=datetime.now(tz=timezone.utc),
+        incident_timestamp=datetime.now(tz=UTC),
         incident_category="buffer_underrun",
         incident_summary="Underrun while recording",
         events=[],
@@ -20,12 +20,12 @@ def test_correlator_returns_no_event_message() -> None:
 def test_correlator_uses_first_event_in_heuristic_mode() -> None:
     correlator = IncidentCorrelator()
     event = SystemEvent(
-        timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        timestamp=datetime(2026, 1, 1, tzinfo=UTC),
         source="com.apple.iokit.usb",
         message="USB device disconnected",
     )
     result = correlator.correlate(
-        incident_timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        incident_timestamp=datetime(2026, 1, 1, tzinfo=UTC),
         incident_category="device_disconnect",
         incident_summary="Interface vanished",
         events=[event],

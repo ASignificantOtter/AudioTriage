@@ -13,8 +13,10 @@ audiotriage = "audiotriage.cli:main"
 
 [project.optional-dependencies]
 dev = [
+  "mypy>=1.11.0",
   "pytest>=8.3.0",
   "ruff>=0.6.0",
+  "types-psutil>=7.0.0.20250722",
 ]
 
 [build-system]
@@ -36,3 +38,9 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+check_untyped_defs = true
+exclude = ["src/audiotriage.egg-info/"]

@@ -26,9 +26,15 @@ class IncidentClassifier:
                 system_prompt=CLASSIFIER_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
             )
+            confidence_value = payload.get("confidence", 0.0)
+            confidence = (
+                float(confidence_value)
+                if isinstance(confidence_value, int | float)
+                else 0.0
+            )
             result = ClassificationResult(
                 category=str(payload.get("category", "unknown")),
-                confidence=float(payload.get("confidence", 0.0)),
+                confidence=confidence,
                 reasoning=str(payload.get("reasoning", "No reasoning provided.")),
             ).normalized()
 
@@ -44,7 +50,10 @@ class IncidentClassifier:
         lowered = raw_log.lower()
         rules = [
             ("cpu_thermal_overload", ["thermal pressure", "cpu overload", "throttl", "thermal"]),
-            ("buffer_underrun", ["buffer underrun", "buffer overload", "i/o cycle slipped", "underrun"]),
+            (
+                "buffer_underrun",
+                ["buffer underrun", "buffer overload", "i/o cycle slipped", "underrun"],
+            ),
             ("device_disconnect", ["device removed", "disconnect", "usb detach"]),
             ("sample_rate_mismatch", ["sample rate mismatch", "clock mismatch"]),
             ("driver_restart", ["coreaudiod restart", "coreaudiod relaunch", "driver restart"]),
@@ -57,7 +66,11 @@ class IncidentClassifier:
                     reasoning=f"Matched heuristic tokens for {category}.",
                 )
 
-        return ClassificationResult(category="unknown", confidence=0.4, reasoning="No clear signal.")
+        return ClassificationResult(
+            category="unknown",
+            confidence=0.4,
+            reasoning="No clear signal.",
+        )
 
 
 def result_to_dict(result: ClassificationResult) -> dict[str, object]:
