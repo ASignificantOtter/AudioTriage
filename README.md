@@ -28,12 +28,10 @@ tests/
 
 ## Setup (uv)
 
-1. Create a virtual environment and install dependencies:
+1. Sync the project environment with dev dependencies:
 
 	```bash
-	uv venv
-	source .venv/bin/activate
-	uv pip install -e ".[dev]"
+	uv sync --extra dev
 	```
 
 2. Copy and edit configuration:
@@ -53,32 +51,30 @@ tests/
 1. Install dev dependencies:
 
 	```bash
-	python3 -m venv .venv
-	source .venv/bin/activate
-	python -m pip install -e ".[dev]"
+	uv sync --extra dev
 	```
 
 2. Run full tests:
 
 	```bash
-	python -m pytest
+	uv run pytest
 	```
 
 3. CLI sanity check:
 
 	```bash
-	audiotriage --help
+	uv run audiotriage --help
 	```
 
 4. Real-session validation (for OpenSpec tasks 7.1-7.3):
 
 	```bash
 	# Terminal 1: run collector
-	audiotriage run --config config/audiotriage.toml
+	uv run audiotriage run --config config/audiotriage.toml
 
 	# Terminal 2: after reproducing an audio incident
-	audiotriage report --config config/audiotriage.toml --since 2026-01-01T00:00:00
-	audiotriage summary --config config/audiotriage.toml --week
+	uv run audiotriage report --config config/audiotriage.toml --since 2026-01-01T00:00:00
+	uv run audiotriage summary --config config/audiotriage.toml --week
 	```
 
 ## Current Foundations
