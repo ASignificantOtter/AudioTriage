@@ -143,7 +143,7 @@ class AudioTriageServices:
 
         database_parent = Path(settings.database_path).parent
         if database_parent != Path() and not database_parent.exists():
-            errors.append(f"Database parent directory does not exist: {database_parent}")
+            details.append(f"Database parent directory does not exist yet: {database_parent}")
 
         details.append(f"Database path: {settings.database_path}")
         details.append(f"Report output directory: {self._output_dir}")

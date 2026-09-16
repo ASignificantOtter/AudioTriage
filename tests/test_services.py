@@ -120,6 +120,47 @@ database_path = "{db_path}"
     assert not pid_path.parent.exists()
 
 
+def test_validate_settings_treats_missing_database_parent_as_detail(tmp_path: Path) -> None:
+    log_binary_path = tmp_path / "log"
+    system_profiler_path = tmp_path / "system_profiler"
+    powermetrics_path = tmp_path / "powermetrics"
+    for tool_path in (log_binary_path, system_profiler_path, powermetrics_path):
+        tool_path.write_text("", encoding="utf-8")
+
+    config_path = tmp_path / "config.toml"
+    database_path = tmp_path / "var" / "audiotriage.sqlite3"
+    config_path.write_text(
+        f"""
+[api]
+llm_api_key = "test"
+
+[paths]
+log_binary_path = "{log_binary_path}"
+system_profiler_path = "{system_profiler_path}"
+powermetrics_path = "{powermetrics_path}"
+
+[logs]
+coreaudiod_log_predicate = 'process == "coreaudiod"'
+usb_log_predicate = 'subsystem == "com.apple.iokit.usb"'
+
+[thresholds]
+correlation_window_seconds = 10
+confidence_threshold = 0.8
+
+[storage]
+database_path = "{database_path}"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = AudioTriageServices(config_path).validate_settings()
+
+    assert result.valid is True
+    assert not any("Database parent directory does not exist" in message for message in result.errors)
+    assert any(
+        "Database parent directory does not exist yet" in detail for detail in result.details
+    )
+
 def test_list_summary_files_groups_markdown_and_json(
     tmp_path: Path,
     config_writer: Callable[[Path], tuple[Path, Path, Path]],
