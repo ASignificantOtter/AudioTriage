@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import sqlite3
 import subprocess
 import sys
 import webbrowser
@@ -155,7 +156,8 @@ class AudioTriageServices:
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
-        initialize_database(settings.database_path)
+        if not Path(settings.database_path).exists():
+            initialize_database(settings.database_path)
         return get_connection(settings.database_path)
 
     def ensure_runtime_directories(self) -> None:
@@ -185,7 +187,7 @@ class AudioTriageServices:
                 ).fetchone()
                 if row is not None:
                     last_incident_timestamp = str(row[0])
-        except (OSError, ValueError):
+        except Exception:
             last_incident_timestamp = None
 
         if running:
@@ -317,7 +319,8 @@ class AudioTriageServices:
         )
 
     def list_summary_files(self) -> list[SummaryFile]:
-        self._output_dir.mkdir(parents=True, exist_ok=True)
+        if not self._output_dir.exists():
+            return []
         grouped: dict[str, SummaryFile] = {}
         for path in sorted(self._output_dir.glob("summary-*.*")):
             if path.suffix not in {".md", ".json"}:
@@ -424,7 +427,8 @@ class AudioTriageServices:
         )
 
     def _latest_output_path(self, prefix: str, suffix: str) -> Path | None:
-        self._output_dir.mkdir(parents=True, exist_ok=True)
+        if not self._output_dir.exists():
+            return None
         candidates = sorted(self._output_dir.glob(f"{prefix}*{suffix}"))
         if not candidates:
             return None
