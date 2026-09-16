@@ -35,8 +35,8 @@
 
 ## 5. Quality and Validation
 - [x] 5.1 Add or update tests for refactored CLI and new service boundaries
-- [ ] 5.2 Run existing linting and test workflows after GUI/service changes
-- [ ] 5.3 Verify the app can launch locally, read the existing SQLite database,
+- [x] 5.2 Run existing linting and test workflows after GUI/service changes
+- [x] 5.3 Verify the app can launch locally, read the existing SQLite database,
       and surface reports/summaries without requiring terminal use
 
 ## 6. Documentation
