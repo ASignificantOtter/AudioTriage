@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import sqlite3
 import subprocess
 import sys
 import webbrowser
@@ -142,7 +143,7 @@ class AudioTriageServices:
 
         database_parent = Path(settings.database_path).parent
         if database_parent != Path() and not database_parent.exists():
-            errors.append(f"Database parent directory does not exist: {database_parent}")
+            details.append(f"Database parent directory does not exist yet: {database_parent}")
 
         details.append(f"Database path: {settings.database_path}")
         details.append(f"Report output directory: {self._output_dir}")
@@ -155,8 +156,12 @@ class AudioTriageServices:
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
-        initialize_database(settings.database_path)
-        return get_connection(settings.database_path)
+        database_path = Path(settings.database_path)
+        if database_path.parent != Path():
+            database_path.parent.mkdir(parents=True, exist_ok=True)
+        if not database_path.exists():
+            initialize_database(database_path)
+        return get_connection(database_path)
 
     def ensure_runtime_directories(self) -> None:
         self._output_dir.mkdir(parents=True, exist_ok=True)
@@ -185,7 +190,7 @@ class AudioTriageServices:
                 ).fetchone()
                 if row is not None:
                     last_incident_timestamp = str(row[0])
-        except (OSError, ValueError):
+        except (OSError, ValueError, sqlite3.Error):
             last_incident_timestamp = None
 
         if running:
@@ -317,7 +322,8 @@ class AudioTriageServices:
         )
 
     def list_summary_files(self) -> list[SummaryFile]:
-        self._output_dir.mkdir(parents=True, exist_ok=True)
+        if not self._output_dir.exists():
+            return []
         grouped: dict[str, SummaryFile] = {}
         for path in sorted(self._output_dir.glob("summary-*.*")):
             if path.suffix not in {".md", ".json"}:
@@ -424,7 +430,8 @@ class AudioTriageServices:
         )
 
     def _latest_output_path(self, prefix: str, suffix: str) -> Path | None:
-        self._output_dir.mkdir(parents=True, exist_ok=True)
+        if not self._output_dir.exists():
+            return None
         candidates = sorted(self._output_dir.glob(f"{prefix}*{suffix}"))
         if not candidates:
             return None
