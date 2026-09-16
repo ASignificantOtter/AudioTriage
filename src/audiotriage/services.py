@@ -135,9 +135,6 @@ class AudioTriageServices:
         if database_parent != Path() and not database_parent.exists():
             messages.append(f"Database parent directory does not exist: {database_parent}")
 
-        self._output_dir.mkdir(parents=True, exist_ok=True)
-        self._collector_pid_path.parent.mkdir(parents=True, exist_ok=True)
-
         messages.append(f"Database path: {settings.database_path}")
         messages.append(f"Report output directory: {self._output_dir}")
         valid = not any(msg.startswith("Missing") or "must be" in msg for msg in messages)
@@ -145,8 +142,13 @@ class AudioTriageServices:
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
+        self.ensure_runtime_directories()
         initialize_database(settings.database_path)
         return get_connection(settings.database_path)
+
+    def ensure_runtime_directories(self) -> None:
+        self._output_dir.mkdir(parents=True, exist_ok=True)
+        self._collector_pid_path.parent.mkdir(parents=True, exist_ok=True)
 
     def run_collector_foreground(self) -> None:
         start_collector(self._config_path)

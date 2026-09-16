@@ -95,7 +95,13 @@ database_path = "{db_path}"
         encoding="utf-8",
     )
 
-    result = AudioTriageServices(config_path).validate_settings()
+    output_dir = tmp_path / "var" / "reports"
+    pid_path = tmp_path / "var" / "collector.pid"
+    result = AudioTriageServices(
+        config_path,
+        output_dir=output_dir,
+        collector_pid_path=pid_path,
+    ).validate_settings()
 
     assert result.valid is False
     assert any("Missing required path" in message for message in result.messages)
@@ -103,6 +109,8 @@ database_path = "{db_path}"
         "confidence_threshold must be between 0.0 and 1.0" == message
         for message in result.messages
     )
+    assert not output_dir.exists()
+    assert not pid_path.parent.exists()
 
 
 def test_list_summary_files_groups_markdown_and_json(tmp_path: Path) -> None:
@@ -147,6 +155,22 @@ def test_collector_status_uses_pid_file(tmp_path: Path) -> None:
 
     assert status.running is True
     assert status.pid == _current_pid()
+
+
+def test_ensure_runtime_directories_creates_output_and_pid_parents(tmp_path: Path) -> None:
+    config_path, _, _ = _write_config(tmp_path)
+    output_dir = tmp_path / "nested" / "reports"
+    pid_path = tmp_path / "runtime" / "collector.pid"
+
+    services = AudioTriageServices(
+        config_path=config_path,
+        output_dir=output_dir,
+        collector_pid_path=pid_path,
+    )
+    services.ensure_runtime_directories()
+
+    assert output_dir.exists()
+    assert pid_path.parent.exists()
 
 
 def _write_config(tmp_path: Path) -> tuple[Path, Path, Path]:
