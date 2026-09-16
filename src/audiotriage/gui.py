@@ -187,6 +187,7 @@ class AudioTriageMainWindow(QMainWindow):
         return container
 
     def _set_non_settings_tabs_enabled(self, enabled: bool) -> None:
+        # Settings tab is always the last tab; enable/disable all others.
         for index in range(self._tabs.count() - 1):
             self._tabs.setTabEnabled(index, enabled)
 
