@@ -187,6 +187,11 @@ class AudioTriageMainWindow(QMainWindow):
         return container
 
     def refresh_all(self) -> None:
+        validation = self._services.validate_settings()
+        if not validation.valid:
+            self.refresh_settings()
+            self._set_status("Configuration invalid — fix settings before using other views")
+            return
         self.refresh_dashboard()
         self.refresh_incidents()
         self.refresh_summaries()
@@ -254,7 +259,6 @@ class AudioTriageMainWindow(QMainWindow):
 
         if incidents:
             self._incident_table.selectRow(0)
-            self._show_incident_detail(self._services.get_incident(incidents[0].incident_id))
         else:
             self._incident_detail.clear()
 
@@ -328,7 +332,13 @@ class AudioTriageMainWindow(QMainWindow):
     def _generate_custom_summary(self) -> None:
         try:
             since = datetime.fromisoformat(self._summary_since.text())
-            until = datetime.fromisoformat(self._summary_until.text())
+            until_raw = datetime.fromisoformat(self._summary_until.text())
+            # If the user entered a date-only value (no time component), advance to
+            # end-of-day so that incidents occurring during that day are included.
+            if until_raw.hour == 0 and until_raw.minute == 0 and until_raw.second == 0 and until_raw.microsecond == 0:
+                until = until_raw.replace(hour=23, minute=59, second=59, microsecond=999999)
+            else:
+                until = until_raw
         except ValueError:
             QMessageBox.critical(self, "Invalid date", "Use ISO dates like YYYY-MM-DD.")
             return

@@ -155,7 +155,6 @@ class AudioTriageServices:
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
-        self.ensure_runtime_directories()
         initialize_database(settings.database_path)
         return get_connection(settings.database_path)
 
