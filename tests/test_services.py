@@ -161,6 +161,7 @@ database_path = "{database_path}"
         "Database parent directory does not exist yet" in detail for detail in result.details
     )
 
+
 def test_list_summary_files_groups_markdown_and_json(
     tmp_path: Path,
     config_writer: Callable[[Path], tuple[Path, Path, Path]],
