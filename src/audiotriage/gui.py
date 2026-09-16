@@ -277,9 +277,14 @@ class AudioTriageMainWindow(QMainWindow):
             f"Config: {self._services.config_path}",
             f"Valid: {'yes' if validation.valid else 'no'}",
             "",
-            "Checks:",
+            "Errors:",
         ]
-        lines.extend(f"- {message}" for message in validation.messages)
+        if validation.errors:
+            lines.extend(f"- {message}" for message in validation.errors)
+        else:
+            lines.append("- None")
+        lines.extend(["", "Details:"])
+        lines.extend(f"- {message}" for message in validation.details)
         self._settings_text.setPlainText("\n".join(lines))
 
     def _on_incident_selected(self) -> None:

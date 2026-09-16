@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import signal
 import subprocess
@@ -16,7 +17,7 @@ from audiotriage.collector import start_collector
 from audiotriage.config import Settings, load_settings
 from audiotriage.correlator import IncidentCorrelator, SystemEventWindowQuery
 from audiotriage.db import get_connection, initialize_database
-from audiotriage.orchestrator.controller import PipelineController, _parse_raw_payload
+from audiotriage.orchestrator.controller import PipelineController
 from audiotriage.reporter.service import ReportWriter
 
 
@@ -63,7 +64,8 @@ class SummaryFile:
 class SettingsValidationResult:
     valid: bool
     settings: Settings | None
-    messages: list[str]
+    errors: list[str]
+    details: list[str]
 
 
 @dataclass(slots=True)
@@ -104,18 +106,25 @@ class AudioTriageServices:
         return load_settings(self._config_path)
 
     def validate_settings(self) -> SettingsValidationResult:
-        messages: list[str] = []
+        errors: list[str] = []
+        details: list[str] = []
         if not self._config_path.exists():
             return SettingsValidationResult(
                 valid=False,
                 settings=None,
-                messages=[f"Config file does not exist: {self._config_path}"],
+                errors=[f"Config file does not exist: {self._config_path}"],
+                details=[],
             )
 
         try:
             settings = self.load_current_settings()
         except (OSError, ValueError) as exc:
-            return SettingsValidationResult(valid=False, settings=None, messages=[str(exc)])
+            return SettingsValidationResult(
+                valid=False,
+                settings=None,
+                errors=[str(exc)],
+                details=[],
+            )
 
         tool_paths = {
             "log_binary_path": settings.log_binary_path,
@@ -124,21 +133,25 @@ class AudioTriageServices:
         }
         for label, raw_path in tool_paths.items():
             if not Path(raw_path).exists():
-                messages.append(f"Missing required path for {label}: {raw_path}")
+                errors.append(f"Missing required path for {label}: {raw_path}")
 
         if settings.correlation_window_seconds <= 0:
-            messages.append("correlation_window_seconds must be greater than zero")
+            errors.append("correlation_window_seconds must be greater than zero")
         if not 0.0 <= settings.confidence_threshold <= 1.0:
-            messages.append("confidence_threshold must be between 0.0 and 1.0")
+            errors.append("confidence_threshold must be between 0.0 and 1.0")
 
         database_parent = Path(settings.database_path).parent
         if database_parent != Path() and not database_parent.exists():
-            messages.append(f"Database parent directory does not exist: {database_parent}")
+            errors.append(f"Database parent directory does not exist: {database_parent}")
 
-        messages.append(f"Database path: {settings.database_path}")
-        messages.append(f"Report output directory: {self._output_dir}")
-        valid = not any(msg.startswith("Missing") or "must be" in msg for msg in messages)
-        return SettingsValidationResult(valid=valid, settings=settings, messages=messages)
+        details.append(f"Database path: {settings.database_path}")
+        details.append(f"Report output directory: {self._output_dir}")
+        return SettingsValidationResult(
+            valid=not errors,
+            settings=settings,
+            errors=errors,
+            details=details,
+        )
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
@@ -287,7 +300,7 @@ class AudioTriageServices:
         if row is None:
             return None
 
-        raw_payload = _parse_raw_payload(str(row[5]))
+        raw_payload = _parse_raw_log_payload(str(row[5]))
         return IncidentDetail(
             incident_id=int(row[0]),
             incident_timestamp=str(row[1]),
@@ -438,8 +451,10 @@ def _read_pid(pid_path: Path) -> int | None:
 def _pid_exists(pid: int) -> bool:
     try:
         os.kill(pid, 0)
-    except OSError:
+    except ProcessLookupError:
         return False
+    except PermissionError:
+        return True
     return True
 
 
@@ -449,3 +464,12 @@ def _remove_file_if_exists(path: Path) -> None:
     except FileNotFoundError:
         return
 
+
+def _parse_raw_log_payload(raw_log: str) -> dict[str, object]:
+    try:
+        payload = json.loads(raw_log)
+    except json.JSONDecodeError:
+        return {"context": raw_log}
+    if isinstance(payload, dict):
+        return payload
+    return {"context": raw_log}

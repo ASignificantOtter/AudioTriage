@@ -111,10 +111,10 @@ database_path = "{db_path}"
     ).validate_settings()
 
     assert result.valid is False
-    assert any("Missing required path" in message for message in result.messages)
+    assert any("Missing required path" in message for message in result.errors)
     assert any(
         "confidence_threshold must be between 0.0 and 1.0" == message
-        for message in result.messages
+        for message in result.errors
     )
     assert not output_dir.exists()
     assert not pid_path.parent.exists()
