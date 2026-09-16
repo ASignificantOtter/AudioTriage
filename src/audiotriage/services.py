@@ -156,9 +156,12 @@ class AudioTriageServices:
 
     def _connect(self) -> Connection:
         settings = self.load_current_settings()
-        if not Path(settings.database_path).exists():
-            initialize_database(settings.database_path)
-        return get_connection(settings.database_path)
+        database_path = Path(settings.database_path)
+        if database_path.parent != Path():
+            database_path.parent.mkdir(parents=True, exist_ok=True)
+        if not database_path.exists():
+            initialize_database(database_path)
+        return get_connection(database_path)
 
     def ensure_runtime_directories(self) -> None:
         self._output_dir.mkdir(parents=True, exist_ok=True)
