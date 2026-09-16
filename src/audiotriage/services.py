@@ -465,7 +465,7 @@ def _pid_exists(pid: int) -> bool:
 def _remove_file_if_exists(path: Path) -> None:
     try:
         path.unlink()
-    except (FileNotFoundError, PermissionError, OSError):
+    except OSError:
         return
 
 
