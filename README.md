@@ -64,6 +64,7 @@ tests/
 
 	```bash
 	uv run audiotriage --help
+	uv run audiotriage-gui --help
 	```
 
 4. Real-session validation (for OpenSpec tasks 7.1-7.3):
@@ -105,7 +106,34 @@ What AI implemented:
 - Python package scaffolding and module boundaries.
 - SQLite schema bootstrap and config loading.
 - Collector, classifier, correlator, reporter, and orchestration code.
-- CLI commands, launchd packaging template, and unit-test scaffolding.
+- CLI commands, desktop GUI, launchd packaging template, and unit-test scaffolding.
+
+## Desktop GUI
+
+AudioTriage now includes a local desktop UI built with `PySide6`. It is
+intended as a read-first control surface over the existing local pipeline
+rather than a rewrite of the backend.
+
+Launch it with:
+
+```bash
+uv run audiotriage-gui --config config/audiotriage.example.toml
+```
+
+Or from the existing CLI:
+
+```bash
+uv run audiotriage --config config/audiotriage.example.toml gui
+```
+
+Current GUI scope:
+
+- dashboard for collector status and recent incident counts
+- incident browser with detail view
+- summary browser with weekly/custom summary generation
+- latest incident report Markdown/JSON open actions
+- settings validation view for config and paths
+- minimal collector start/stop and report generation actions
 
 ## Sample Outputs
 

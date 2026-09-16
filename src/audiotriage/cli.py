@@ -4,13 +4,7 @@ import argparse
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from audiotriage.classifier import IncidentClassifier
-from audiotriage.collector import start_collector
-from audiotriage.config import load_settings
-from audiotriage.correlator import IncidentCorrelator, SystemEventWindowQuery
-from audiotriage.db import get_connection, initialize_database
-from audiotriage.orchestrator.controller import PipelineController
-from audiotriage.reporter.service import ReportWriter
+from audiotriage.services import AudioTriageServices
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -24,6 +18,7 @@ def _build_parser() -> argparse.ArgumentParser:
     subcommands = parser.add_subparsers(dest="command", required=True)
 
     subcommands.add_parser("run", help="Start collector service")
+    subcommands.add_parser("gui", help="Launch the desktop GUI")
 
     report_parser = subcommands.add_parser(
         "report",
@@ -57,47 +52,40 @@ def main() -> None:
     args = parser.parse_args()
 
     config_path = Path(args.config)
-    settings = load_settings(config_path)
-    initialize_database(settings.database_path)
+    services = AudioTriageServices(config_path=config_path)
 
     if args.command == "run":
-        start_collector(config_path)
+        services.run_collector_foreground()
         return
 
-    with get_connection(settings.database_path) as connection:
-        controller = PipelineController(
-            connection=connection,
-            classifier=IncidentClassifier(confidence_threshold=settings.confidence_threshold),
-            correlator=IncidentCorrelator(),
-            event_query=SystemEventWindowQuery(settings.log_binary_path),
-            report_writer=ReportWriter(),
-            correlation_window_seconds=settings.correlation_window_seconds,
-        )
+    if args.command == "gui":
+        from audiotriage.gui import launch_desktop_app
 
-        if args.command == "report":
-            since = datetime.fromisoformat(args.since) if args.since else None
-            count = controller.process_unreported(output_dir=args.output_dir, since=since)
-            print(f"Processed {count} incident(s).")
-            return
+        launch_desktop_app(config_path)
+        return
 
-        if args.command == "summary":
-            if args.week:
-                since = datetime.now() - timedelta(days=7)
-                until = datetime.now()
-            else:
-                since = (
-                    datetime.fromisoformat(args.since)
-                    if args.since
-                    else datetime.now() - timedelta(days=7)
-                )
-                until = datetime.fromisoformat(args.until) if args.until else datetime.now()
-            md_path, json_path = controller.build_summary(
-                output_dir=args.output_dir,
-                since=since,
-                until=until,
+    if args.command == "report":
+        since = datetime.fromisoformat(args.since) if args.since else None
+        services = AudioTriageServices(config_path=config_path, output_dir=args.output_dir)
+        count = services.process_unreported(since=since)
+        print(f"Processed {count} incident(s).")
+        return
+
+    if args.command == "summary":
+        services = AudioTriageServices(config_path=config_path, output_dir=args.output_dir)
+        if args.week:
+            since = datetime.now() - timedelta(days=7)
+            until = datetime.now()
+        else:
+            since = (
+                datetime.fromisoformat(args.since)
+                if args.since
+                else datetime.now() - timedelta(days=7)
             )
-            print(f"Wrote summary files: {md_path}, {json_path}")
-            return
+            until = datetime.fromisoformat(args.until) if args.until else datetime.now()
+        md_path, json_path = services.generate_summary(since=since, until=until)
+        print(f"Wrote summary files: {md_path}, {json_path}")
+        return
 
     parser.error("Unhandled command")
 
