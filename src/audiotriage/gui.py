@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 from pathlib import Path
 from typing import cast
 
@@ -335,7 +335,7 @@ class AudioTriageMainWindow(QMainWindow):
             until_raw = datetime.fromisoformat(self._summary_until.text())
             # If the user entered a date-only value (no time component), advance to
             # end-of-day so that incidents occurring during that day are included.
-            if until_raw.hour == 0 and until_raw.minute == 0 and until_raw.second == 0 and until_raw.microsecond == 0:
+            if until_raw.time() == time.min:
                 until = until_raw.replace(hour=23, minute=59, second=59, microsecond=999999)
             else:
                 until = until_raw
