@@ -28,6 +28,9 @@ jobs:
         with:
           enable-cache: true
 
+      - name: Install system dependencies
+        run: sudo apt-get install -y libegl1 libgl1 libglib2.0-0
+
       - name: Sync dependencies
         run: uv sync --frozen --extra dev
 
