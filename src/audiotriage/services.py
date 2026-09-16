@@ -233,7 +233,12 @@ class AudioTriageServices:
         if pid is None:
             return self.collector_status()
         if _pid_exists(pid):
-            os.kill(pid, signal.SIGTERM)
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except PermissionError:
+                return self.collector_status()
+            except ProcessLookupError:
+                pass
         _remove_file_if_exists(self._collector_pid_path)
         return self.collector_status()
 
@@ -460,7 +465,7 @@ def _pid_exists(pid: int) -> bool:
 def _remove_file_if_exists(path: Path) -> None:
     try:
         path.unlink()
-    except FileNotFoundError:
+    except (FileNotFoundError, PermissionError, OSError):
         return
 
 
