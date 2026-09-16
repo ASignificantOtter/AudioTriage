@@ -191,5 +191,6 @@ def test_ensure_runtime_directories_creates_output_and_pid_parents(
     assert output_dir.exists()
     assert pid_path.parent.exists()
 
+
 def _current_pid() -> int:
     return os.getpid()

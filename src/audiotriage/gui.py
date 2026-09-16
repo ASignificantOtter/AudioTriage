@@ -330,7 +330,7 @@ class AudioTriageMainWindow(QMainWindow):
             since = datetime.fromisoformat(self._summary_since.text())
             until = datetime.fromisoformat(self._summary_until.text())
         except ValueError:
-            QMessageBox.critical(self, "Invalid date", "Use ISO dates like 2026-09-16.")
+            QMessageBox.critical(self, "Invalid date", "Use ISO dates like YYYY-MM-DD.")
             return
         md_path, _ = self._services.generate_summary(since=since, until=until)
         self.refresh_summaries()
