@@ -187,7 +187,7 @@ class AudioTriageServices:
                 ).fetchone()
                 if row is not None:
                     last_incident_timestamp = str(row[0])
-        except Exception:
+        except (OSError, ValueError, sqlite3.Error):
             last_incident_timestamp = None
 
         if running:
