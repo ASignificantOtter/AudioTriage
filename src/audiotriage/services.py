@@ -179,7 +179,7 @@ class AudioTriageServices:
         if running:
             message = f"Collector running (PID {pid})"
         else:
-            message = "No GUI-managed collector process detected"
+            message = "No managed collector process detected"
 
         return CollectorStatus(
             running=running,
@@ -345,26 +345,38 @@ class AudioTriageServices:
         return Path(md_path), Path(json_path)
 
     def dashboard_data(self) -> DashboardData:
-        incidents = self.list_incidents(limit=100)
-        now = datetime.now()
-        recent_24_hours = 0
-        recent_7_days = 0
-        category_counts: Counter[str] = Counter()
-        cause_counts: Counter[str] = Counter()
-
-        for incident in incidents:
-            timestamp = _parse_iso_datetime(incident.incident_timestamp)
-            if timestamp is not None:
-                if timestamp.tzinfo is not None:
-                    age = now - timestamp.replace(tzinfo=None)
-                else:
-                    age = now - timestamp
-                if age <= timedelta(hours=24):
-                    recent_24_hours += 1
-                if age <= timedelta(days=7):
-                    recent_7_days += 1
-            category_counts[incident.category] += 1
-            cause_counts[incident.correlated_cause or "unknown"] += 1
+        latest_incident = self.list_incidents(limit=1)
+        with self._connect() as connection:
+            recent_24_hours = self._count_since(connection, timedelta(hours=24))
+            recent_7_days = self._count_since(connection, timedelta(days=7))
+            category_counts = Counter(
+                {
+                    str(row[0]): int(row[1])
+                    for row in connection.execute(
+                        """
+                        SELECT class, COUNT(*)
+                        FROM incidents
+                        GROUP BY class
+                        ORDER BY COUNT(*) DESC, class ASC
+                        LIMIT 5
+                        """
+                    ).fetchall()
+                }
+            )
+            cause_counts = Counter(
+                {
+                    str(row[0] or "unknown"): int(row[1])
+                    for row in connection.execute(
+                        """
+                        SELECT COALESCE(correlated_cause, 'unknown'), COUNT(*)
+                        FROM incidents
+                        GROUP BY COALESCE(correlated_cause, 'unknown')
+                        ORDER BY COUNT(*) DESC, COALESCE(correlated_cause, 'unknown') ASC
+                        LIMIT 5
+                        """
+                    ).fetchall()
+                }
+            )
 
         return DashboardData(
             collector_status=self.collector_status(),
@@ -372,7 +384,7 @@ class AudioTriageServices:
             incidents_last_7_days=recent_7_days,
             top_categories=category_counts.most_common(5),
             top_causes=cause_counts.most_common(5),
-            latest_incident=incidents[0] if incidents else None,
+            latest_incident=latest_incident[0] if latest_incident else None,
         )
 
     def open_path(self, path: Path) -> bool:
@@ -401,6 +413,18 @@ class AudioTriageServices:
             return None
         return max(candidates, key=lambda path: path.stat().st_mtime)
 
+    def _count_since(self, connection: Connection, window: timedelta) -> int:
+        threshold = (datetime.now() - window).isoformat()
+        row = connection.execute(
+            """
+            SELECT COUNT(*)
+            FROM incidents
+            WHERE incident_timestamp >= ?
+            """,
+            (threshold,),
+        ).fetchone()
+        return int(row[0]) if row is not None else 0
+
 
 def _read_pid(pid_path: Path) -> int | None:
     if not pid_path.exists():
@@ -425,9 +449,3 @@ def _remove_file_if_exists(path: Path) -> None:
     except FileNotFoundError:
         return
 
-
-def _parse_iso_datetime(value: str) -> datetime | None:
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None

@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import os
+from collections.abc import Callable
 from pathlib import Path
 
 from audiotriage.db import initialize_database
 from audiotriage.services import AudioTriageServices
 
 
-def test_services_list_incidents_and_dashboard(tmp_path: Path) -> None:
-    config_path, db_path, output_dir = _write_config(tmp_path)
+def test_services_list_incidents_and_dashboard(
+    tmp_path: Path,
+    config_writer: Callable[[Path], tuple[Path, Path, Path]],
+) -> None:
+    config_path, db_path, output_dir = config_writer(tmp_path)
     initialize_database(db_path)
 
     services = AudioTriageServices(config_path=config_path, output_dir=output_dir)
@@ -65,7 +70,9 @@ def test_services_list_incidents_and_dashboard(tmp_path: Path) -> None:
 
     dashboard = services.dashboard_data()
     assert dashboard.latest_incident is not None
-    assert dashboard.top_categories[0] == ("device_disconnect", 1)
+    top_categories = dict(dashboard.top_categories)
+    assert top_categories["device_disconnect"] == 1
+    assert top_categories["buffer_underrun"] == 1
 
 
 def test_validate_settings_reports_missing_paths(tmp_path: Path) -> None:
@@ -113,8 +120,11 @@ database_path = "{db_path}"
     assert not pid_path.parent.exists()
 
 
-def test_list_summary_files_groups_markdown_and_json(tmp_path: Path) -> None:
-    config_path, _, output_dir = _write_config(tmp_path)
+def test_list_summary_files_groups_markdown_and_json(
+    tmp_path: Path,
+    config_writer: Callable[[Path], tuple[Path, Path, Path]],
+) -> None:
+    config_path, _, output_dir = config_writer(tmp_path)
     services = AudioTriageServices(config_path=config_path, output_dir=output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "summary-2026-09-01_to_2026-09-07.md").write_text("# Summary\n", encoding="utf-8")
@@ -127,8 +137,11 @@ def test_list_summary_files_groups_markdown_and_json(tmp_path: Path) -> None:
     assert summaries[0].json_path is not None
 
 
-def test_latest_report_paths_returns_newest_pair(tmp_path: Path) -> None:
-    config_path, _, output_dir = _write_config(tmp_path)
+def test_latest_report_paths_returns_newest_pair(
+    tmp_path: Path,
+    config_writer: Callable[[Path], tuple[Path, Path, Path]],
+) -> None:
+    config_path, _, output_dir = config_writer(tmp_path)
     services = AudioTriageServices(config_path=config_path, output_dir=output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "incident-older.md").write_text("old", encoding="utf-8")
@@ -143,8 +156,11 @@ def test_latest_report_paths_returns_newest_pair(tmp_path: Path) -> None:
     assert json_path.name == "incident-newer.json"
 
 
-def test_collector_status_uses_pid_file(tmp_path: Path) -> None:
-    config_path, _, _ = _write_config(tmp_path)
+def test_collector_status_uses_pid_file(
+    tmp_path: Path,
+    config_writer: Callable[[Path], tuple[Path, Path, Path]],
+) -> None:
+    config_path, _, _ = config_writer(tmp_path)
     pid_path = tmp_path / "collector.pid"
     pid_path.write_text(str(_current_pid()), encoding="utf-8")
 
@@ -157,8 +173,11 @@ def test_collector_status_uses_pid_file(tmp_path: Path) -> None:
     assert status.pid == _current_pid()
 
 
-def test_ensure_runtime_directories_creates_output_and_pid_parents(tmp_path: Path) -> None:
-    config_path, _, _ = _write_config(tmp_path)
+def test_ensure_runtime_directories_creates_output_and_pid_parents(
+    tmp_path: Path,
+    config_writer: Callable[[Path], tuple[Path, Path, Path]],
+) -> None:
+    config_path, _, _ = config_writer(tmp_path)
     output_dir = tmp_path / "nested" / "reports"
     pid_path = tmp_path / "runtime" / "collector.pid"
 
@@ -172,38 +191,5 @@ def test_ensure_runtime_directories_creates_output_and_pid_parents(tmp_path: Pat
     assert output_dir.exists()
     assert pid_path.parent.exists()
 
-
-def _write_config(tmp_path: Path) -> tuple[Path, Path, Path]:
-    db_path = tmp_path / "audiotriage.sqlite3"
-    output_dir = tmp_path / "reports"
-    config_path = tmp_path / "audiotriage.toml"
-    config_path.write_text(
-        f"""
-[api]
-llm_api_key = "test"
-
-[paths]
-log_binary_path = "/bin/echo"
-system_profiler_path = "/bin/echo"
-powermetrics_path = "/bin/echo"
-
-[logs]
-coreaudiod_log_predicate = "process == \\"coreaudiod\\""
-usb_log_predicate = "subsystem == \\"com.apple.iokit.usb\\""
-
-[thresholds]
-correlation_window_seconds = 10
-confidence_threshold = 0.7
-
-[storage]
-database_path = "{db_path}"
-""".strip(),
-        encoding="utf-8",
-    )
-    return config_path, db_path, output_dir
-
-
 def _current_pid() -> int:
-    import os
-
     return os.getpid()
