@@ -186,12 +186,19 @@ class AudioTriageMainWindow(QMainWindow):
         layout.addWidget(self._settings_text)
         return container
 
+    def _set_non_settings_tabs_enabled(self, enabled: bool) -> None:
+        for index in range(self._tabs.count() - 1):
+            self._tabs.setTabEnabled(index, enabled)
+
     def refresh_all(self) -> None:
         validation = self._services.validate_settings()
         if not validation.valid:
+            self._set_non_settings_tabs_enabled(False)
+            self._tabs.setCurrentIndex(self._tabs.count() - 1)
             self.refresh_settings()
             self._set_status("Configuration invalid — fix settings before using other views")
             return
+        self._set_non_settings_tabs_enabled(True)
         self.refresh_dashboard()
         self.refresh_incidents()
         self.refresh_summaries()
